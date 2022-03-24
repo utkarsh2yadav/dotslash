@@ -4,22 +4,21 @@ import Editor from './components/Editor.js';
 import SearchAppBar from './components/SearchAppBar.js';
 import Console from './components/Console.js';
 
+import BasicSpeedDial from './components/SpeedDial.js';
 function App() {
   return (
     <div className="App">
       <SearchAppBar />
       <Grid container spacing={0}>
         <Grid item xs={6} md={6}>
-        <Editor />
+          <Editor />
+          <BasicSpeedDial />
         </Grid>
 
         <Grid item xs={6} md={6}>
-        <Console />
+          <Console />
         </Grid>
-        
-        
-          
-      </Grid>
+      </Grid>
     </div>
   );
 }
