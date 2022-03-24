@@ -2,6 +2,8 @@ import { Grid } from '@mui/material';
 import './App.css';
 import Editor from './components/Editor.js';
 import SearchAppBar from './components/SearchAppBar.js';
+import Console from './components/Console.js';
+
 function App() {
   return (
     <div className="App">
@@ -11,12 +13,13 @@ function App() {
         <Editor />
         </Grid>
 
+        <Grid item xs={6} md={6}>
+        <Console />
+        </Grid>
         
-          
-      </Grid>
-
-
-
+        
+          
+      </Grid>
     </div>
   );
 }
