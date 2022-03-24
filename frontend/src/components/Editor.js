@@ -11,7 +11,7 @@ export default function Editor() {
     enableBasicAutocompletion="true"
     enableLiveAutocompletion="true"
     width="100%"
-    height="90vh"
+    height="80vh"
     mode="java"
     theme="monokai"
     name="UNIQUE_ID_OF_DIV"

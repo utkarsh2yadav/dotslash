@@ -1,7 +1,7 @@
 import {FormControl, Select, MenuItem, InputLabel} from '@mui/material';
 export default function LangSelect() {
   return <FormControl size='medium'>
-    <InputLabel id="language">Age</InputLabel>
+    <InputLabel id="language">Language</InputLabel>
     <Select
       labelId="language"
       id="language"
