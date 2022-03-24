@@ -135,7 +135,6 @@ func (l *Language) Handler(c *websocket.Conn) {
 				w.Close()
 				return
 			}
-			log.Println(string(data))
 			w.Write(append(data, '\n'))
 		}
 	}(containerResp.Conn)
@@ -164,7 +163,10 @@ func (l *Language) Handler(c *websocket.Conn) {
 	// Connect STDOUT to websocket
 	go func() {
 		for {
-			data := <-output
+			data, ok := <-output
+			if !ok {
+				break
+			}
 			stringData := string(data[:])
 			if !utf8.ValidString(stringData) {
 				v := make([]rune, 0, len(stringData))
@@ -186,6 +188,7 @@ func (l *Language) Handler(c *websocket.Conn) {
 		}
 	}()
 
+	// Websocket to docker
 	go func(c *websocket.Conn) {
 		for {
 			if _, msg, err := c.ReadMessage(); err != nil {
@@ -203,13 +206,15 @@ loop:
 		case err := <-errorCh:
 			log.Println(err)
 			close(inout)
+			close(output)
 			break loop
-		case status := <-statusCh:
-			log.Printf("Exit Status: %v", status.StatusCode)
+		case <-statusCh:
 			close(inout)
+			close(output)
 			break loop
 		case err := <-errChan:
 			close(inout)
+			close(output)
 			log.Println(err)
 			if err != io.EOF {
 				log.Println(err)
