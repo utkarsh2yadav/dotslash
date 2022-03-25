@@ -1,23 +1,24 @@
-import logo from './logo.svg';
+import { Grid } from '@mui/material';
 import './App.css';
+import Editor from './components/Editor.js';
+import SearchAppBar from './components/SearchAppBar.js';
+import Console from './components/Console.js';
 
+import BasicSpeedDial from './components/SpeedDial.js';
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <SearchAppBar />
+      <Grid container spacing={0}>
+        <Grid item xs={6} md={6}>
+          <Editor />
+          <BasicSpeedDial />
+        </Grid>
+
+        <Grid item xs={6} md={6}>
+          <Console />
+        </Grid>
+      </Grid>
     </div>
   );
 }
