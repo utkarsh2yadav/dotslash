@@ -1,24 +1,31 @@
 import { Grid } from '@mui/material';
+import { Terminal } from 'xterm';
 import './App.css';
 import Editor from './components/Editor.js';
 import SearchAppBar from './components/SearchAppBar.js';
 import Console from './components/Console.js';
 
-import BasicSpeedDial from './components/SpeedDial.js';
+// import Term from './components/Term'
+
+
 function App() {
+
+  let xterm = new Terminal()
+
   return (
     <div className="App">
       <SearchAppBar />
-      <Grid container spacing={0}>
-        <Grid item xs={6} md={6}>
-          <Editor />
-          <BasicSpeedDial />
+      <Grid container style={{ height: "90vh" }} spacing={"5"}>
+        <Grid item md={6}>
+          <Editor xterm={xterm} />
         </Grid>
 
-        <Grid item xs={6} md={6}>
-          <Console />
+        <Grid item md={6}>
+          <Console xterm={xterm} />
+          {/* <Term xterm={xterm} /> */}
         </Grid>
       </Grid>
+
     </div>
   );
 }
