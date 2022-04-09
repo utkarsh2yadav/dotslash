@@ -11,6 +11,8 @@ import (
 func main() {
 	app := fiber.New()
 
+	app.Static("/", "./frontend/build/")
+
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			c.Locals("allowed", true)
