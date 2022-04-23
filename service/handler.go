@@ -28,7 +28,10 @@ func (l *Language) Handler(c *websocket.Conn) {
 		err error
 	)
 
-	errorResponse := []byte("Server Error")
+	errorResponse := WsResponse{
+		Output: "",
+		Error:  "Server Error\n",
+	}
 
 	if _, msg, err = c.ReadMessage(); err != nil {
 		log.Println(err)
@@ -39,21 +42,21 @@ func (l *Language) Handler(c *websocket.Conn) {
 	body := new(WsBody)
 	if err := json.Unmarshal(msg, body); err != nil {
 		log.Println(err)
-		c.WriteMessage(websocket.TextMessage, errorResponse)
+		c.WriteJSON(errorResponse)
 		return
 	}
 
 	directory, err := os.MkdirTemp("", "")
 	if err != nil {
 		log.Println(err)
-		c.WriteMessage(websocket.TextMessage, errorResponse)
+		c.WriteJSON(errorResponse)
 		return
 	}
 	defer os.RemoveAll(directory)
 
 	if err := os.WriteFile(fmt.Sprintf("%v/%v.%v", directory, l.Filename, l.getExtension()), []byte(body.Code), 0664); err != nil {
 		log.Println(err)
-		c.WriteMessage(websocket.TextMessage, errorResponse)
+		c.WriteJSON(errorResponse)
 		return
 	}
 
@@ -61,7 +64,7 @@ func (l *Language) Handler(c *websocket.Conn) {
 	dockerClient, err = client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		log.Println(err)
-		c.WriteMessage(websocket.TextMessage, errorResponse)
+		c.WriteJSON(errorResponse)
 		return
 	}
 
@@ -90,7 +93,7 @@ func (l *Language) Handler(c *websocket.Conn) {
 
 	if err != nil {
 		log.Println(err)
-		c.WriteMessage(websocket.TextMessage, errorResponse)
+		c.WriteJSON(errorResponse)
 		return
 	}
 
@@ -102,7 +105,7 @@ func (l *Language) Handler(c *websocket.Conn) {
 
 	if err = dockerClient.ContainerStart(timeoutContext, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Println(err)
-		c.WriteMessage(websocket.TextMessage, errorResponse)
+		c.WriteJSON(errorResponse)
 		return
 	}
 
@@ -117,7 +120,7 @@ func (l *Language) Handler(c *websocket.Conn) {
 	})
 	if err != nil {
 		log.Println(err)
-		c.WriteMessage(websocket.TextMessage, errorResponse)
+		c.WriteJSON(errorResponse)
 		return
 	}
 	defer containerResp.Close()
@@ -181,7 +184,10 @@ func (l *Language) Handler(c *websocket.Conn) {
 				}
 				stringData = string(v)
 			}
-			if err := c.WriteMessage(websocket.TextMessage, []byte(stringData)); err != nil {
+			if err := c.WriteJSON(WsResponse{
+				Output: stringData,
+				Error:  "",
+			}); err != nil {
 				errChan <- err
 				break
 			}
