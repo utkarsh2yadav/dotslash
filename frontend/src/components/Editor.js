@@ -25,6 +25,27 @@ import "ace-builds/src-noconflict/snippets/typescript"
 export default function Editor(props) {
 
   let [code, setCode] = useState("")
+  let ws
+  let input = ""
+
+  props.xterm.onKey(e => {
+    if (ws.readyState === ws.OPEN) {
+      if (e.domEvent.keyCode === 13) {
+        ws.send(JSON.stringify({ input: input }))
+        props.xterm.write("\r\n")
+        input = ""
+      } else if (e.domEvent.keyCode === 8) {
+        if (input.length > 0) {
+          input = input.slice(0, -1)
+        }
+        props.xterm.write("\b \b")
+      } else {
+        input += e.key
+        props.xterm.write(e.key)
+      }
+    }
+  })
+
 
   return <>
     <AceEditor
