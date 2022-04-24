@@ -126,14 +126,14 @@ func (l *Language) Handler(c *websocket.Conn) {
 	defer containerResp.Close()
 
 	bufin := bufio.NewReader(containerResp.Reader)
-	inout := make(chan []byte)
+	input := make(chan []byte)
 	output := make(chan []byte)
 	errChan := make(chan error)
 
 	// Write to docker container
 	go func(w io.WriteCloser) {
 		for {
-			data, ok := <-inout
+			data, ok := <-input
 			if !ok {
 				w.Close()
 				return
@@ -201,7 +201,7 @@ func (l *Language) Handler(c *websocket.Conn) {
 				log.Println(err)
 				break
 			} else {
-				inout <- msg
+				input <- msg
 			}
 		}
 	}(c)
@@ -211,15 +211,15 @@ loop:
 		select {
 		case err := <-errorCh:
 			log.Println(err)
-			close(inout)
+			close(input)
 			close(output)
 			break loop
 		case <-statusCh:
-			close(inout)
+			close(input)
 			close(output)
 			break loop
 		case err := <-errChan:
-			close(inout)
+			close(input)
 			close(output)
 			log.Println(err)
 			if err != io.EOF {
