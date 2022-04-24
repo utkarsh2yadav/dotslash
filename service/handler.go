@@ -1,7 +1,6 @@
 package service
 
 import (
-	"bufio"
 	"context"
 	. "dotslash/model"
 	"encoding/json"
@@ -10,12 +9,12 @@ import (
 	"log"
 	"os"
 	"time"
-	"unicode/utf8"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gofiber/websocket/v2"
 )
 
@@ -29,8 +28,9 @@ func (l *Language) Handler(c *websocket.Conn) {
 	)
 
 	errorResponse := WsResponse{
-		Output: "",
-		Error:  "Server Error\n",
+		Output:      "",
+		Error:       "",
+		ServerError: "Server Error\n",
 	}
 
 	if _, msg, err = c.ReadMessage(); err != nil {
@@ -77,7 +77,7 @@ func (l *Language) Handler(c *websocket.Conn) {
 		AttachStdout: true,
 		AttachStderr: true,
 		OpenStdin:    true,
-		Tty:          true,
+		Tty:          false,
 		Image:        l.Name,
 		WorkingDir:   "/work",
 		Cmd:          l.getCommand(body),
@@ -125,10 +125,11 @@ func (l *Language) Handler(c *websocket.Conn) {
 	}
 	defer containerResp.Close()
 
-	bufin := bufio.NewReader(containerResp.Reader)
 	input := make(chan []byte)
-	output := make(chan []byte)
+	output := make(chan string)
+	outputError := make(chan string)
 	errChan := make(chan error)
+	terminateCh := make(chan bool)
 
 	// Write to docker container
 	go func(w io.WriteCloser) {
@@ -138,58 +139,50 @@ func (l *Language) Handler(c *websocket.Conn) {
 				w.Close()
 				return
 			}
-			w.Write(append(data, '\n'))
+			w.Write(data)
 		}
 	}(containerResp.Conn)
 
 	// Receive from docker container
-	go func() {
-		for {
-			buffer := make([]byte, 4096, 4096)
-			c, err := bufin.Read(buffer)
-			if err != nil {
-				errChan <- err
-				break
-			}
-			if c > 0 {
-				output <- buffer[:c]
-			}
-			if c == 0 {
-				output <- []byte{' '}
-			}
-			if err != nil {
-				break
-			}
+	go func(reader io.Reader) {
+		outputChannelWriter := ChannelWriter{output}
+		errorChannelWriter := ChannelWriter{outputError}
+		_, err := stdcopy.StdCopy(&outputChannelWriter, &errorChannelWriter, reader)
+		if err != nil {
+			errChan <- err
 		}
-	}()
+	}(containerResp.Reader)
 
 	// Connect STDOUT to websocket
 	go func() {
+	loop:
 		for {
-			data, ok := <-output
-			if !ok {
-				break
-			}
-			stringData := string(data[:])
-			if !utf8.ValidString(stringData) {
-				v := make([]rune, 0, len(stringData))
-				for i, r := range stringData {
-					if r == utf8.RuneError {
-						_, size := utf8.DecodeRuneInString(stringData[i:])
-						if size == 1 {
-							continue
-						}
-					}
-					v = append(v, r)
+			select {
+			case data, ok := <-output:
+				if !ok {
+					break loop
 				}
-				stringData = string(v)
-			}
-			if err := c.WriteJSON(WsResponse{
-				Output: stringData,
-				Error:  "",
-			}); err != nil {
-				errChan <- err
-				break
+				if err := c.WriteJSON(WsResponse{
+					Output:      data,
+					Error:       "",
+					ServerError: "",
+				}); err != nil {
+					errChan <- err
+					break loop
+				}
+
+			case data, ok := <-outputError:
+				if !ok {
+					break loop
+				}
+				if err := c.WriteJSON(WsResponse{
+					Output:      "",
+					Error:       data,
+					ServerError: "",
+				}); err != nil {
+					errChan <- err
+					break loop
+				}
 			}
 		}
 	}()
@@ -198,10 +191,21 @@ func (l *Language) Handler(c *websocket.Conn) {
 	go func(c *websocket.Conn) {
 		for {
 			if _, msg, err := c.ReadMessage(); err != nil {
-				log.Println(err)
+				errChan <- err
 				break
 			} else {
-				input <- msg
+				if err := json.Unmarshal(msg, body); err != nil {
+					log.Println(err)
+					terminateCh <- true
+					break
+				}
+				if body.Interrupt {
+					terminateCh <- true
+					break
+				}
+				if body.Input != "" {
+					input <- []byte(body.Input)
+				}
 			}
 		}
 	}(c)
@@ -211,18 +215,31 @@ loop:
 		select {
 		case err := <-errorCh:
 			log.Println(err)
+			c.WriteJSON(errorResponse)
 			close(input)
 			close(output)
+			close(outputError)
 			break loop
 		case <-statusCh:
 			close(input)
 			close(output)
+			close(outputError)
 			break loop
 		case err := <-errChan:
 			close(input)
 			close(output)
+			close(outputError)
 			log.Println(err)
+			c.WriteJSON(errorResponse)
 			if err != io.EOF {
+				log.Println(err)
+			}
+			break loop
+		case <-terminateCh:
+			if err := dockerClient.ContainerStop(timeoutContext, resp.ID, nil); err != nil {
+				close(input)
+				close(output)
+				close(outputError)
 				log.Println(err)
 			}
 			break loop
