@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import AceEditor from "react-ace";
+import React, { useState } from "react"
+import AceEditor from "react-ace"
+import { Fab } from "@mui/material"
+import { PlayArrow, StopRounded } from "@mui/icons-material"
 
 import "ace-builds/src-noconflict/mode-c_cpp"
 import "ace-builds/src-noconflict/mode-golang"
@@ -54,5 +56,13 @@ export default function Editor(props) {
       Run
     </Fab>
 
+    <Fab color='warning' variant="extended" onClick={(_) => {
+      if (ws && ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({ interrupt: true }))
+      }
+    }}>
+      <StopRounded sx={{ mr: 1 }} />
+      Stop
+    </Fab>
   </>
 }
