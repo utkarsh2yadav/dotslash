@@ -65,12 +65,19 @@ export default function Editor(props) {
     />
     Ctrl + Shift + B to beautify
     <Fab color='secondary' variant="extended" onClick={(_) => {
-      let ws = new WebSocket("ws://localhost:8080/ws/golang")
+      ws = new WebSocket("ws://localhost:8080/ws/golang")
       ws.onopen = () => {
-        ws.send(JSON.stringify({ "code": code }))
+        props.xterm.reset()
+        ws.send(JSON.stringify({ code: code }))
       }
       ws.onmessage = (event) => {
-        props.xterm.write(event.data)
+        let data = JSON.parse(event.data)
+        if (data.error !== "")
+          props.xterm.write(`\u001b[31m${data.error.replaceAll(/\n/g, "\r\n")}`)
+        else if (data.server_error !== "")
+          props.xterm.write(`\u001b[33m${data.server_error.replaceAll(/\n/g, "\r\n")}`)
+        else
+          props.xterm.write(data.output.replaceAll(/\n/g, "\r\n"))
       }
     }}>
       <PlayArrow sx={{ mr: 1 }} />
