@@ -29,7 +29,7 @@ export default function Editor(props) {
   let input = ""
 
   props.xterm.onKey(e => {
-    if (ws.readyState === ws.OPEN) {
+    if (ws && ws.readyState === ws.OPEN) {
       if (e.domEvent.keyCode === 13) {
         ws.send(JSON.stringify({ input: input }))
         props.xterm.write("\r\n")
