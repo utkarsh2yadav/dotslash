@@ -8,6 +8,8 @@ import InputBase from '@mui/material/InputBase';
 import Container from '@mui/material/Container';
 import SearchIcon from '@mui/icons-material/Search';
 import LangSelect from './LangSelect';
+import Faab from './Fab';
+
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -62,6 +64,7 @@ export default function SearchAppBar() {
           >
             DotSlash
           </Typography>
+          <Faab/>
           <Container sx={{ flexGrow: 1 }} />
           <LangSelect />
           <Search>

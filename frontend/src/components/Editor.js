@@ -53,7 +53,7 @@ export default function Editor(props) {
       enableBasicAutocompletion={true}
       enableLiveAutocompletion={true}
       width="100%"
-      height="100%"
+      height="100.5%"
       mode="golang"
       theme="one_dark"
       name="editor"
@@ -63,7 +63,7 @@ export default function Editor(props) {
       }}
       commands={beautify.commands}
     />
-    Ctrl + Shift + B to beautify
+    
     <Fab color='secondary' variant="extended" onClick={(_) => {
       ws = new WebSocket("ws://localhost:8080/ws/golang")
       ws.onopen = () => {
