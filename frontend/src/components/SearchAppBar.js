@@ -6,7 +6,6 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import Container from '@mui/material/Container';
-import SearchIcon from '@mui/icons-material/Search';
 import LangSelect from './LangSelect';
 import Faab from './Fab';
 
@@ -64,18 +63,10 @@ export default function SearchAppBar() {
           >
             DotSlash
           </Typography>
-          <Faab/>
+          
           <Container sx={{ flexGrow: 1 }} />
           <LangSelect />
-          <Search>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Search…"
-              inputProps={{ 'aria-label': 'search' }}
-            />
-          </Search>
+          <Faab/>
         </Toolbar>
       </AppBar>
     </Box>
